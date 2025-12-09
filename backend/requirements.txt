@@ -4,3 +4,5 @@ uvicorn
 python-chess
 chess
 torch
+flask
+gunicorn
