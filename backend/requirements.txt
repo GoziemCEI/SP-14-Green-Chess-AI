@@ -1,6 +1,6 @@
 fastapi
+uvicorn[standard]
 numpy
-uvicorn
 python-chess
 chess
 torch
