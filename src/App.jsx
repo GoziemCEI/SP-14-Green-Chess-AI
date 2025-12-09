@@ -1,3 +1,4 @@
+import { API_URL } from "./config";
 import React, { useState, useRef, useEffect} from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
@@ -21,7 +22,9 @@ export default function App() {
   const wsRef = useRef(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws/chess");
+    const wsURL = API_URL.replace(/^http/, "ws") + "/ws/chess";
+    const ws = new WebSocket(wsURL);
+
     wsRef.current = ws;
 
     ws.onopen = () => console.log("Connected to WebSocket server");
@@ -53,14 +56,14 @@ export default function App() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/best-move/", {
+      const response = await fetch(`${API_URL}/best-move/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           fen: gameRef.current.fen(),
-          mode: gameMode, 
+         game_mode: gameMode,
         }),
       });
 
