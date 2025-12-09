@@ -1,3 +1,4 @@
+import os
 import chess
 import chess.engine
 import sys
@@ -17,14 +18,27 @@ def get_opening_move(board: chess.Board):
     return None
 
 def get_best_move(board: chess.Board) -> chess.Move:
-    if sys.platform == "win":
-        engine_path = "engine/stockfish-windows-x86-64-avx2.exe"
-    else:
-        engine_path = "engine/stockfish-macos-m1-apple-silicon"
-    engine = chess.engine.SimpleEngine.popen_uci(engine_path)
-    result = engine.play(board, chess.engine.Limit(time=0.1))
-    engine.quit()
-    return result.move
+    try:
+        # Check if on Windows
+        if sys.platform == "win32":  # IMPORTANT: It's "win32" not "win"
+            engine_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "engine", "stockfish-windows-x86-64-avx2.exe")
+        else:
+            engine_path = "engine/stockfish-macos-m1-apple-silicon"
+        
+        print(f"Platform: {sys.platform}")
+        print(f"Attempting to load engine from: {engine_path}")
+        print(f"File exists: {os.path.exists(engine_path)}")
+        
+        engine = chess.engine.SimpleEngine.popen_uci(engine_path)
+        result = engine.play(board, chess.engine.Limit(time=0.1))
+        engine.quit()
+        return result.move
+    except Exception as e:
+        print(f"ERROR in get_best_move: {e}")
+        raise
+
+
+
 
 
 def minimax(board: chess.Board, depth: int, alpha=float('-inf'), beta=float('inf')) -> float:

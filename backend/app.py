@@ -1,24 +1,45 @@
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import chess
 import chess.engine
 from AIEngine import get_best_move, minimax, evaluate_board, get_opening_move
+from green_chess_ai import GreenChessAI
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+ai = GreenChessAI(num_simulations=100)
+
 class BoardState(BaseModel):
     fen: str
-    game_mode: str = "engine"  # "engine" or "minimax"
+    game_mode: str = "engine" # "engine" or "minimax"
 
 @app.post("/evalbar/")
 def eval_bar(board_state: BoardState):
     board = chess.Board(board_state.fen)
-    eval = evaluate_board(board)
+    
+    if board_state.game_mode == "neural-mcts":
+        eval = ai.evaluate_position(board)
+    else:
+        eval = evaluate_board(board)
+    
     return {"evaluation": eval}
 
 @app.post("/best-move/")
 def best_move(board_state: BoardState):
     board = chess.Board(board_state.fen)
+    
     if board_state.game_mode == "minimax":
         move = get_opening_move(board)
         if move:
@@ -34,17 +55,27 @@ def best_move(board_state: BoardState):
                 best_value = board_value
                 best_move_result = move
         return {"best_move": best_move_result.uci() if best_move_result else None}
+    
     elif board_state.game_mode == "engine":
         move = get_best_move(board)
         return {"best_move": move.uci()}
+    
+    elif board_state.game_mode == "neural-mcts":
+        move = ai.get_best_move(board)
+        if move:
+            return {"best_move": move.uci()}
+        return {"best_move": None}
+    
     else:
-        return {"error": "Invalid game mode. Choose 'engine' or 'minimax'."}
+        return {"error": "Invalid game mode. Choose 'engine', 'minimax', or 'neural-mcts'."}
+
 @app.get("/")
 def root():
     return {"message": "Chess Engine API is running!"}
-# --- new section for multiplayer WebSocket ---
+
 from typing import List
 
+# --- new section for multiplayer WebSocket ---
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
