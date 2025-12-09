@@ -13,11 +13,12 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 ai = GreenChessAI(num_simulations=100)
 
@@ -72,6 +73,10 @@ def best_move(board_state: BoardState):
 @app.get("/")
 def root():
     return {"message": "Chess Engine API is running!"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}
 
 from typing import List
 
